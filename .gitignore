@@ -1,6 +1,7 @@
 # 忽略 Python 編譯檔
 __pycache__/
 *.pyc
+.DS_Store
 
 # 忽略虛擬環境 (如果有的話)
 .venv/
