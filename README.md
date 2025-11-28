@@ -22,3 +22,6 @@ pip install "gymnasium[classic_control]==1.2.2" numpy matplotlib pygame
 ## 3.How to run :
 
 ## 4.Contribution list :
+|Work|Name|
+|---|---|
+|readme.md|童煜凱|
