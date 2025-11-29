@@ -20,6 +20,16 @@ pip install "gymnasium[classic_control]==1.2.2" numpy matplotlib pygame
 ```
 
 ## 3.How to run :
+### Part 1:
+#### type in terminal :
+```bash
+# Train the agent
+python mountain_car.py --train --episodes 5000
+
+# Render and visualize performance
+python mountain_car.py --render --episodes 10
+```
+
 
 ## 4.Contribution list :
 |Work|Name|
