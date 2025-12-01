@@ -41,5 +41,4 @@ python mountain_car.py --render --episodes 10
 ## 6.幹真的很爽劇爽爽到不行111
 |Dick|size|
 |---|---|
-|30cm|喜熊|
-/*/6767____|||||||////////
+30cm|喜熊
