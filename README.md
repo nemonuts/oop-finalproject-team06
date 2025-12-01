@@ -34,4 +34,4 @@ python mountain_car.py --render --episodes 10
 ## 4.Contribution list :
 |Work|Name|
 |---|---|
-|readme.md|童煜凱|
+|readme.md|童煜凱|67|
