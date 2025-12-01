@@ -38,4 +38,4 @@ python mountain_car.py --render --episodes 10
 
 ## 5.test 67 big ass
 
-## 6.幹真的很爽劇爽爽到不行
+## 6.幹真的很爽劇爽爽到不行111
