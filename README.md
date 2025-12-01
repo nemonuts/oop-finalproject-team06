@@ -32,8 +32,8 @@ python mountain_car.py --render --episodes 10
 
 
 ## 4.Contribution list :
-|Work|Name|
-|---|---|
-|readme.md|童煜凱|
+|Work|Name|Name|
+|---|---|---|
+|readme.md|童煜凱|楊紘鈞|
 
-## 5.test 67
+## 5.test 67 big ass
