@@ -1,120 +1,164 @@
-'''
-Custom Gym environment
-https://gymnasium.farama.org/tutorials/gymnasium_basics/environment_creation/
-'''
+import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
-from gymnasium.envs.registration import register
-from gymnasium.utils.env_checker import check_env
+import pygame  # 引入 pygame 繪圖庫
 
-import warehouse_robot  as wr
-import numpy as np
+class GomokuEnv(gym.Env):
+    """
+    【五子棋環境 GomokuEnv - Pygame GUI 版】
+    這是升級版的環境，使用 Pygame 彈出視窗來顯示畫面，
+    不再是在 Terminal 裡面印符號。
+    """
+    # 設定渲染模式與 FPS
+    metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps': 10}
 
-# Register this module as a gym environment. Once registered, the id is usable in gym.make().
-register(
-    id='warehouse-robot-v0',                                # call it whatever you want
-    entry_point='oop_project_env:WarehouseRobotEnv', # module_name:class_name
-)
-
-# Implement our own gym env, must inherit from gym.Env
-# https://gymnasium.farama.org/api/env/
-class WarehouseRobotEnv(gym.Env):
-    # metadata is a required attribute
-    # render_modes in our environment is either None or 'human'.
-    # render_fps is not used in our env, but we are require to declare a non-zero value.
-    metadata = {"render_modes": ["human"], 'render_fps': 4}
-
-    def __init__(self, grid_rows=4, grid_cols=5, render_mode=None):
-
-        self.grid_rows=grid_rows
-        self.grid_cols=grid_cols
+    def __init__(self, board_size=9, win_streak=5, render_mode=None):
+        self.board_size = board_size
+        self.win_streak = win_streak
         self.render_mode = render_mode
-
-        # Initialize the WarehouseRobot problem
-        self.warehouse_robot = wr.WarehouseRobot(grid_rows=grid_rows, grid_cols=grid_cols, fps=self.metadata['render_fps'])
-
-        # Gym requires defining the action space. The action space is robot's set of possible actions.
-        # Training code can call action_space.sample() to randomly select an action. 
-        self.action_space = spaces.Discrete(len(wr.RobotAction))
-
-        # Gym requires defining the observation space. The observation space consists of the robot's and target's set of possible positions.
-        # The observation space is used to validate the observation returned by reset() and step().
-        # Use a 1D vector: [robot_row_pos, robot_col_pos, target_row_pos, target_col_pos]
-        self.observation_space = spaces.Box(
-            low=0,
-            high=np.array([self.grid_rows-1, self.grid_cols-1, self.grid_rows-1, self.grid_cols-1]),
-            shape=(4,),
-            dtype=np.int32
-        )
-
-    # Gym required function (and parameters) to reset the environment
-    def reset(self, seed=None, options=None):
-        super().reset(seed=seed) # gym requires this call to control randomness and reproduce scenarios.
-
-        # Reset the WarehouseRobot. Optionally, pass in seed control randomness and reproduce scenarios.
-        self.warehouse_robot.reset(seed=seed)
-
-        # Construct the observation state:
-        # [robot_row_pos, robot_col_pos, target_row_pos, target_col_pos]
-        obs = np.concatenate((self.warehouse_robot.robot_pos, self.warehouse_robot.target_pos))
         
-        # Additional info to return. For debugging or whatever.
-        info = {}
+        # 0: 空位, 1: 黑棋 (Player 1), 2: 白棋 (Player 2)
+        self.board = np.zeros((board_size, board_size), dtype=int)
+        self.current_player = 1 
+        
+        # 動作空間與觀察空間
+        self.action_space = spaces.Discrete(board_size * board_size)
+        self.observation_space = spaces.Box(low=0, high=2, shape=(board_size, board_size), dtype=int)
 
-        # Render environment
-        if(self.render_mode=='human'):
-            self.render()
+        # Pygame 視窗設定
+        self.window_size = 512  # 視窗大小 (像素)
+        self.window = None
+        self.clock = None
 
-        # Return observation and info
-        return obs, info
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+        self.board = np.zeros((self.board_size, self.board_size), dtype=int)
+        self.current_player = 1
+        
+        # 如果是 human 模式，重置時順便渲染第一幀
+        if self.render_mode == "human":
+            self._render_frame()
+            
+        return self.board, {}
 
-    # Gym required function (and parameters) to perform an action
     def step(self, action):
-        # Perform action
-        target_reached = self.warehouse_robot.perform_action(wr.RobotAction(action))
+        row = action // self.board_size
+        col = action % self.board_size
 
-        # Determine reward and termination
-        reward=0
-        terminated=False
-        if target_reached:
-            reward=1
-            terminated=True
+        if self.board[row, col] != 0:
+            return self.board, -10, False, False, {"error": "Invalid move"}
 
-        # Construct the observation state: 
-        # [robot_row_pos, robot_col_pos, target_row_pos, target_col_pos]
-        obs = np.concatenate((self.warehouse_robot.robot_pos, self.warehouse_robot.target_pos))
+        self.board[row, col] = self.current_player
 
-        # Additional info to return. For debugging or whatever.
+        terminated = False
+        reward = 1
         info = {}
 
-        # Render environment
-        if(self.render_mode=='human'):
-            print(wr.RobotAction(action))
-            self.render()
+        if self.check_win(row, col):
+            reward = 100
+            terminated = True
+            info["winner"] = self.current_player
+        elif np.all(self.board != 0):
+            reward = 0
+            terminated = True
+            info["winner"] = 0 # 和局
 
-        # Return observation, reward, terminated, truncated (not used), info
-        return obs, reward, terminated, False, info
+        self.current_player = 3 - self.current_player 
+        
+        if self.render_mode == "human":
+            self._render_frame()
 
-    # Gym required function to render environment
+        return self.board, reward, terminated, False, info
+
+    def check_win(self, row, col):
+        player = self.board[row, col]
+        directions = [(0, 1), (1, 0), (1, 1), (1, -1)] 
+
+        for dr, dc in directions:
+            count = 1
+            for i in range(1, self.win_streak):
+                r, c = row + dr * i, col + dc * i
+                if 0 <= r < self.board_size and 0 <= c < self.board_size and self.board[r, c] == player:
+                    count += 1
+                else: break
+            for i in range(1, self.win_streak):
+                r, c = row - dr * i, col - dc * i
+                if 0 <= r < self.board_size and 0 <= c < self.board_size and self.board[r, c] == player:
+                    count += 1
+                else: break
+            
+            if count >= self.win_streak: return True
+        return False
+
     def render(self):
-        self.warehouse_robot.render()
+        if self.render_mode == "human":
+            return self._render_frame()
 
-# For unit testing
-if __name__=="__main__":
-    env = gym.make('warehouse-robot-v0', render_mode='human')
+    def _render_frame(self):
+        # 初始化視窗 (只執行一次)
+        if self.window is None and self.render_mode == "human":
+            pygame.init()
+            pygame.display.init()
+            self.window = pygame.display.set_mode((self.window_size, self.window_size))
+            pygame.display.set_caption("Gomoku AI Arena") # 設定視窗標題
+        
+        if self.clock is None and self.render_mode == "human":
+            self.clock = pygame.time.Clock()
 
-    # Use this to check our custom environment
-    # print("Check environment begin")
-    # check_env(env.unwrapped)
-    # print("Check environment end")
+        # 建立畫布
+        canvas = pygame.Surface((self.window_size, self.window_size))
+        canvas.fill((221, 187, 136)) # 背景色：木頭顏色
 
-    # Reset environment
-    obs = env.reset()[0]
+        pix_square_size = self.window_size / self.board_size
 
-    # Take some random actions
-    while(True):
-        rand_action = env.action_space.sample()
-        obs, reward, terminated, _, _ = env.step(rand_action)
+        # 1. 畫格線
+        for x in range(self.board_size):
+            # 畫橫線
+            pygame.draw.line(
+                canvas,
+                (0, 0, 0),
+                (pix_square_size / 2, (x + 0.5) * pix_square_size),
+                (self.window_size - pix_square_size / 2, (x + 0.5) * pix_square_size),
+                width=2,
+            )
+            # 畫直線
+            pygame.draw.line(
+                canvas,
+                (0, 0, 0),
+                ((x + 0.5) * pix_square_size, pix_square_size / 2),
+                ((x + 0.5) * pix_square_size, self.window_size - pix_square_size / 2),
+                width=2,
+            )
 
-        if(terminated):
-            obs = env.reset()[0]
+        # 2. 畫棋子
+        for r in range(self.board_size):
+            for c in range(self.board_size):
+                if self.board[r, c] == 0:
+                    continue
+                
+                # 計算中心點位置
+                center_x = (c + 0.5) * pix_square_size
+                center_y = (r + 0.5) * pix_square_size
+                radius = pix_square_size / 2.5
+
+                if self.board[r, c] == 1: # 黑棋
+                    pygame.draw.circle(canvas, (0, 0, 0), (center_x, center_y), radius)
+                elif self.board[r, c] == 2: # 白棋
+                    pygame.draw.circle(canvas, (255, 255, 255), (center_x, center_y), radius)
+                    # 白棋加個黑框比較好看
+                    pygame.draw.circle(canvas, (0, 0, 0), (center_x, center_y), radius, width=2)
+
+        if self.render_mode == "human":
+            # 更新視窗內容
+            self.window.blit(canvas, canvas.get_rect())
+            pygame.event.pump() # 處理視窗事件，避免當機
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+
+    def get_valid_moves(self):
+        return np.where(self.board.flatten() == 0)[0]
+
+    def close(self):
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
