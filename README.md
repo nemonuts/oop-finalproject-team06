@@ -34,8 +34,10 @@ python3.12 mountain_car.py --render --episodes 10
 python3.12 frozen_lake.py
 ```
 ### Part 3:
+#### 先cd到part3資料夾中
 ```bash
-
+python main.py
+```
 
 ## 4.Contribution list :
 |Work|Name|Name|
