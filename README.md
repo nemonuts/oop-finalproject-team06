@@ -21,24 +21,25 @@ pip install "gymnasium[classic_control]==1.2.2" numpy matplotlib pygame
 
 ## 3.How to run :
 ### Part 1:
-#### type in terminal :
 ```bash
 # Train the agent
-python mountain_car.py --train --episodes 5000
+python3.12 mountain_car.py --train --episodes 5000
 
 # Render and visualize performance
-python mountain_car.py --render --episodes 10
+python3.12 mountain_car.py --render --episodes 10
 ```
+### Part 2:
+#### 先確定目前位置在part2資料夾中
+```bash
+python3.12 frozen_lake.py
+```
+### Part 3:
 
 
 ## 4.Contribution list :
 |Work|Name|Name|
 |---|---|---|
 |readme.md|童煜凱|楊紘鈞|
-
-## 5.test 67 big ass
-
-## 6.幹真的很爽劇爽爽到不行111
-|Dick|size|
-|---|---|
-30cm|喜熊
+|part1|童煜凱|
+|part2|童煜凱|
+|part3|楊紘鈞|
