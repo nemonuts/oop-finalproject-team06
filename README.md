@@ -35,10 +35,3 @@ python mountain_car.py --render --episodes 10
 |Work|Name|Name|
 |---|---|---|
 |readme.md|童煜凱|楊紘鈞|
-
-## 5.test 67 big ass
-
-## 6.幹真的很爽劇爽爽到不行111
-|Dick|size|
-|---|---|
-30cm|喜熊
