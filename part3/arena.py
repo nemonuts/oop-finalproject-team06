@@ -1,21 +1,30 @@
+# arena.py - 最終修復版 (適用於 Pygame 環境)
+
 import time
 # 引用您的五子棋環境檔 (請確保您的環境檔名是 oop_project_env.py)
-from oop_project_env import GomokuEnv
+# 假設您已將 tempCodeRunnerFile.py 重新命名為 oop_project_env.py
+from oop_project_env import GomokuEnv 
 
 class GomokuArena:
     """
     【競技場類別 GomokuArena】
     負責管理兩個 AI 之間的對戰流程。
-    這展現了「單一職責原則 (SRP)」，這個類別只管比賽流程，
-    不管 AI 怎麼思考 (交給 Agent)，也不管規則怎麼判斷 (交給 Env)。
     """
+    # 移除 master 參數
     def __init__(self, agent1, agent2, board_size=9, win_streak=5, render=True):
-        self.env = GomokuEnv(board_size=board_size, win_streak=win_streak, render_mode='human' if render else None)
+        
+        # 直接呼叫 GomokuEnv (現在是 Pygame 版本)
+        self.env = GomokuEnv(
+            board_size=board_size, 
+            win_streak=win_streak, 
+            render_mode='human' if render else None
+        )
+            
         self.agent1 = agent1
         self.agent2 = agent2
         self.render = render
 
-    def play_match(self, delay=0.5):
+    def play_match(self, delay=0.5): # <-- 關鍵修正：恢復 play_match 函式！
         """
         開始一場比賽
         delay: 每步暫停的秒數，方便人類觀看
@@ -34,7 +43,7 @@ class GomokuArena:
             else:
                 current_agent = self.agent2
             
-            # 2. 獲取合法步數 (哪些格子是空的)
+            # 2. 獲取合法步數
             valid_moves = self.env.get_valid_moves()
             
             # 3. AI 思考決定下一步
@@ -61,3 +70,6 @@ class GomokuArena:
         else:
             print("🤝 平手 (和局)！")
         print("="*30)
+        
+        # 額外：如果使用 Pygame，結束後需要呼叫 close
+        self.env.close()
