@@ -42,10 +42,7 @@ python main.py
 ## 4.Contribution list :
 |Work|Name|Name|
 |---|---|---|
-<<<<<<< HEAD
 |readme.md|童煜凱|楊紘鈞|
-=======
-|readme.md|童煜凱|楊紘鈞|
-|part1|-|
-|part2|童煜凱|
-|part3|楊紘鈞|
+|part1|-|-|
+|part2|童煜凱|-|
+|part3|楊紘鈞|-|
