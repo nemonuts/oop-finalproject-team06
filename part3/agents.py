@@ -1,114 +1,83 @@
-from abc import ABC, abstractmethod
-import numpy as np
 import random
+import numpy as np
+from abc import ABC, abstractmethod
 
 class BaseAgent(ABC):
-    """
-    【抽象類別 BaseAgent】
-    定義所有五子棋 AI 的共同介面。
-    所有的 AI 都必須繼承這個類別，並實作 choose_action 方法。
-    這展現了 OOP 的「抽象 (Abstraction)」與「繼承 (Inheritance)」。
-    """
     def __init__(self, name):
         self.name = name
 
     @abstractmethod
     def choose_action(self, board, valid_moves):
-        """
-        輸入目前的棋盤狀態和合法步數，回傳決定要下的位置。
-        """
         pass
 
 class RandomAgent(BaseAgent):
-    """
-    【隨機 AI】
-    完全不思考，從合法步數中隨機選一個。
-    適合用來測試，或是當作初學者的對手。
-    """
     def choose_action(self, board, valid_moves):
-        return random.choice(valid_moves)
+        # 修正：檢查 NumPy 陣列是否為空
+        if valid_moves.size == 0:
+            return None
+        return random.choice(valid_moves.tolist()) # 確保這裡使用列表
 
 class GreedyAgent(BaseAgent):
-    """
-    【貪婪 AI】
-    這是一個稍微聰明的 AI，具備基本的攻守邏輯。
-    這展現了 OOP 的「多型 (Polymorphism)」，雖然都是 Agent，但思考方式不同。
-    
-    策略優先順序：
-    1. 進攻：如果下一步能贏，立刻下！
-    2. 防守：如果對手下一步會贏，立刻擋！
-    3. 中間：如果都沒危險，優先搶佔棋盤中心。
-    4. 隨機：剩下就隨便下。
-    """
     def __init__(self, name, board_size, win_streak):
         super().__init__(name)
         self.board_size = board_size
         self.win_streak = win_streak
 
     def choose_action(self, board, valid_moves):
-        # 1. 進攻檢查：檢查自己 (AI) 是否能一步致勝
-        # 簡單判斷：如果棋盤上 1 比較多，那 AI 就是 2；反之 AI 是 1 (假設黑先手)
+        # 修正：檢查 NumPy 陣列是否為空
+        if valid_moves.size == 0:
+            return None
+            
+        valid_moves_list = valid_moves.tolist()
         my_id = 2 if np.sum(board == 1) > np.sum(board == 2) else 1
         
-        winning_move = self.find_winning_move(board, valid_moves, my_id)
+        # 1. 進攻檢查 (一步致勝)
+        winning_move = self._find_winning_move(board, valid_moves_list, my_id)
         if winning_move is not None:
-            # print(f"[{self.name}] 發現致勝機會！進攻！")
             return winning_move
 
-        # 2. 防守檢查：檢查對手 (人類/敵方 AI) 是否快贏了
-        opponent_id = 3 - my_id # 1變2，2變1
-        blocking_move = self.find_winning_move(board, valid_moves, opponent_id)
+        # 2. 防守檢查 (擋住對手致勝)
+        opponent_id = 3 - my_id 
+        blocking_move = self._find_winning_move(board, valid_moves_list, opponent_id)
         if blocking_move is not None:
-            # print(f"[{self.name}] 發現危險！防守！")
             return blocking_move
 
         # 3. 策略：優先下在最中間 (天元)
         center = self.board_size // 2
         center_move = center * self.board_size + center
-        if center_move in valid_moves:
+        if center_move in valid_moves_list:
             return center_move
 
-        # 4. 如果都沒事做，就隨機下
-        return random.choice(valid_moves)
+        # 4. 隨機下
+        return random.choice(valid_moves_list)
 
-    def find_winning_move(self, board, valid_moves, player_id):
-        """
-        輔助方法：模擬下棋
-        嘗試每一個合法的步，看看下在那裡會不會連成線。
-        """
-        for move in valid_moves:
+    def _find_winning_move(self, board, valid_moves_list, player_id):
+        """ 輔助方法：模擬下棋，檢查是否能一步致勝或防守 """
+        for move in valid_moves_list: # <-- 確保迭代列表
             r, c = move // self.board_size, move % self.board_size
             
-            # 假裝下在這裡
             board[r, c] = player_id
             
-            # 檢查是否連線
-            if self.check_win_simulation(board, r, c, player_id):
-                board[r, c] = 0 # 記得復原棋盤！
+            if self._check_win_simulation(board, r, c, player_id):
+                board[r, c] = 0 # 復原
                 return move
             
-            # 復原棋盤，試下一個位置
-            board[r, c] = 0
+            board[r, c] = 0 # 復原
             
         return None
 
-    def check_win_simulation(self, board, row, col, player):
-        """
-        檢查在 (row, col) 落子後是否達成連線。
-        這段邏輯跟環境 (Env) 裡的判斷是一樣的，但這裡是給 AI 腦袋裡模擬用的。
-        """
-        directions = [(0, 1), (1, 0), (1, 1), (1, -1)] # 橫, 直, 右斜, 左斜
+    def _check_win_simulation(self, board, row, col, player):
+        """ 檢查在 (row, col) 落子後是否達成連線。 """
+        directions = [(0, 1), (1, 0), (1, 1), (1, -1)] 
 
         for dr, dc in directions:
             count = 1
-            # 正向延伸檢查
             for i in range(1, self.win_streak):
                 r, c = row + dr * i, col + dc * i
                 if 0 <= r < self.board_size and 0 <= c < self.board_size and board[r, c] == player:
                     count += 1
                 else:
                     break
-            # 反向延伸檢查
             for i in range(1, self.win_streak):
                 r, c = row - dr * i, col - dc * i
                 if 0 <= r < self.board_size and 0 <= c < self.board_size and board[r, c] == player:
@@ -119,3 +88,135 @@ class GreedyAgent(BaseAgent):
             if count >= self.win_streak:
                 return True
         return False
+
+
+class SmartAgent(GreedyAgent):
+    def __init__(self, name, board_size, win_streak):
+        super().__init__(name, board_size, win_streak)
+        self.scores = {
+            5: 10000000, 
+            4: 100000,   
+            '活三': 10000, 
+            '眠三': 1000,  
+            '活二': 100,
+            '眠二': 10,
+            1: 1,
+            0: 0
+        }
+
+    def choose_action(self, board, valid_moves):
+        # 修正：檢查 NumPy 陣列是否為空
+        if valid_moves.size == 0: 
+            return None
+        
+        valid_moves_list = valid_moves.tolist() # <-- 轉為列表，確保後續操作安全
+        my_id = 2 if np.sum(board == 1) > np.sum(board == 2) else 1
+        opponent_id = 3 - my_id 
+
+        best_score = -99999999
+        best_move = random.choice(valid_moves_list) 
+
+        for move in valid_moves_list: # <-- 確保迭代列表
+            r, c = move // self.board_size, move % self.board_size
+            
+            # 1. 模擬自己下子 (進攻評估)
+            board[r, c] = my_id
+            score = self._evaluate_board(board, my_id)
+            
+            # 2. 模擬對手下子 (防守評估，Minimax 概念)
+            opponent_score = self._evaluate_board(board, opponent_id)
+            score -= opponent_score * 0.9 
+
+            board[r, c] = 0 # 復原
+            
+            if score > best_score:
+                best_score = score
+                best_move = move
+            elif score == best_score and random.random() < 0.2:
+                best_move = move
+
+        # 確保一步必勝和一步必擋的策略優先級最高
+        winning_move = self._find_winning_move(board, valid_moves_list, my_id)
+        if winning_move is not None:
+            return winning_move
+
+        blocking_move = self._find_winning_move(board, valid_moves_list, opponent_id)
+        if blocking_move is not None:
+            return blocking_move
+            
+        return best_move
+
+    def _evaluate_board(self, board, player_id):
+        total_score = 0
+        
+        for r in range(self.board_size):
+            for c in range(self.board_size):
+                if board[r, c] == player_id:
+                    total_score += self._get_position_score(board, r, c, player_id)
+                    
+        return total_score
+
+    def _get_position_score(self, board, r, c, player_id):
+        directions = [(0, 1), (1, 0), (1, 1), (1, -1)] 
+        score = 0
+        opponent_id = 3 - player_id
+        
+        for dr, dc in directions:
+            for i in range(-self.win_streak + 1, 1):
+                start_r, start_c = r + dr * i, c + dc * i
+                
+                if not (0 <= start_r < self.board_size and 0 <= start_c < self.board_size):
+                    continue
+
+                line = []
+                for k in range(self.win_streak):
+                    check_r, check_c = start_r + dr * k, start_c + dc * k
+                    
+                    if 0 <= check_r < self.board_size and 0 <= check_c < self.board_size:
+                        line.append(board[check_r, check_c])
+                    else:
+                        line.append(-1) 
+
+                score += self._evaluate_line(line, player_id, opponent_id)
+
+        return score
+        
+    def _evaluate_line(self, line, player_id, opponent_id):
+        if -1 in line:
+            return 0
+        
+        mine = line.count(player_id)
+        opponent = line.count(opponent_id)
+        empty = line.count(0)
+        
+        if opponent > 0 and mine > 0:
+            return 0
+
+        if opponent > 0:
+            return 0 
+        
+        if mine == 0:
+            return 0 
+
+        if mine == self.win_streak:
+            return self.scores[self.win_streak]
+
+        if mine > 0 and (mine + empty) >= self.win_streak:
+            
+            if mine == 4:
+                if empty == 1:
+                    return self.scores[4] 
+                
+            elif mine == 3:
+                if empty >= 2:
+                    return self.scores['活三'] 
+
+            elif mine == 2:
+                if empty >= 3:
+                    return self.scores['活二']
+
+            elif mine == 1:
+                if empty >= 4:
+                    return self.scores[1]
+        
+        return 0

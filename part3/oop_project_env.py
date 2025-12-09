@@ -2,12 +2,12 @@ import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
 import pygame  # 引入 pygame 繪圖庫
+import os
 
 class GomokuEnv(gym.Env):
     """
     【五子棋環境 GomokuEnv - Pygame GUI 版】
-    這是升級版的環境，使用 Pygame 彈出視窗來顯示畫面，
-    不再是在 Terminal 裡面印符號。
+    使用 Pygame 彈出視窗顯示畫面，並修正了背景平鋪邏輯，以達到無縫效果。
     """
     # 設定渲染模式與 FPS
     metadata = {'render_modes': ['human', 'rgb_array'], 'render_fps': 10}
@@ -29,13 +29,13 @@ class GomokuEnv(gym.Env):
         self.window_size = 512  # 視窗大小 (像素)
         self.window = None
         self.clock = None
+        self.tile_img = None # <-- 修正：用來暫存單個地板圖片
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.board = np.zeros((self.board_size, self.board_size), dtype=int)
         self.current_player = 1
         
-        # 如果是 human 模式，重置時順便渲染第一幀
         if self.render_mode == "human":
             self._render_frame()
             
@@ -46,6 +46,7 @@ class GomokuEnv(gym.Env):
         col = action % self.board_size
 
         if self.board[row, col] != 0:
+            # 給予懲罰，但避免中斷
             return self.board, -10, False, False, {"error": "Invalid move"}
 
         self.board[row, col] = self.current_player
@@ -100,36 +101,57 @@ class GomokuEnv(gym.Env):
             pygame.init()
             pygame.display.init()
             self.window = pygame.display.set_mode((self.window_size, self.window_size))
-            pygame.display.set_caption("Gomoku AI Arena") # 設定視窗標題
+            pygame.display.set_caption("Gomoku AI Arena") 
         
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
 
-        # 建立畫布
         canvas = pygame.Surface((self.window_size, self.window_size))
-        canvas.fill((221, 187, 136)) # 背景色：木頭顏色
+        
+        pix_square_size = self.window_size / self.board_size # 計算單一格子像素大小
 
-        pix_square_size = self.window_size / self.board_size
+        # --- 圖片載入與縮放邏輯 (只執行一次) ---
+        if self.tile_img is None:
+            try:
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                img_path = os.path.join(current_dir, "sprites", "floor.png")
+                
+                # 備用路徑檢查 (如果 floor.png 就在 env 檔案同層)
+                if not os.path.exists(img_path):
+                    img_path = os.path.join(current_dir, "floor.png")
+                
+                if os.path.exists(img_path):
+                    print(f"成功載入單一地板圖片: {img_path}")
+                    loaded_img = pygame.image.load(img_path)
+                    # 關鍵修正：將圖片縮放成單個格子的大小
+                    self.tile_img = pygame.transform.scale(loaded_img, (pix_square_size, pix_square_size))
+                else:
+                    print(f"警告：找不到圖片檔案，使用預設顏色。搜尋路徑: {img_path}")
+                    self.tile_img = "DEFAULT_COLOR"
 
-        # 1. 畫格線
-        for x in range(self.board_size):
-            # 畫橫線
-            pygame.draw.line(
-                canvas,
-                (0, 0, 0),
-                (pix_square_size / 2, (x + 0.5) * pix_square_size),
-                (self.window_size - pix_square_size / 2, (x + 0.5) * pix_square_size),
-                width=2,
-            )
-            # 畫直線
-            pygame.draw.line(
-                canvas,
-                (0, 0, 0),
-                ((x + 0.5) * pix_square_size, pix_square_size / 2),
-                ((x + 0.5) * pix_square_size, self.window_size - pix_square_size / 2),
-                width=2,
-            )
+            except Exception as e:
+                print(f"載入圖片發生錯誤: {e}")
+                self.tile_img = "DEFAULT_COLOR"
 
+        # --- 繪製背景 (平鋪邏輯) ---
+        if self.tile_img != "DEFAULT_COLOR" and self.tile_img is not None:
+            # 關鍵修正：使用雙層迴圈平鋪圖片
+            for r in range(self.board_size):
+                for c in range(self.board_size):
+                    # 計算平鋪位置
+                    pos_x = c * pix_square_size
+                    pos_y = r * pix_square_size
+                    canvas.blit(self.tile_img, (pos_x, pos_y))
+        else:
+            # 預設背景色
+            canvas.fill((221, 187, 136)) 
+
+        # 1. 畫格線 (如果需要，目前看起來圖片 floor.png 裡已經有格線了，建議移除)
+        # 由於您的 floor.png 圖片看起來已經有邊框，Pygame 的線條可能會重複
+        # 如果要完美無縫，通常不畫線，讓圖片自己連起來
+        # 暫時保留原有的畫線邏輯，如果產生問題請再移除。
+        # 由於 floor.png 是一塊帶有邊緣的圖，這裡不應該再畫線。
+        
         # 2. 畫棋子
         for r in range(self.board_size):
             for c in range(self.board_size):
@@ -151,7 +173,7 @@ class GomokuEnv(gym.Env):
         if self.render_mode == "human":
             # 更新視窗內容
             self.window.blit(canvas, canvas.get_rect())
-            pygame.event.pump() # 處理視窗事件，避免當機
+            pygame.event.pump() 
             pygame.display.update()
             self.clock.tick(self.metadata["render_fps"])
 
