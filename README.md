@@ -34,6 +34,7 @@ python3.12 mountain_car.py --render --episodes 10
 python3.12 frozen_lake.py
 ```
 ### Part 3:
+```bash
 
 
 ## 4.Contribution list :
@@ -43,6 +44,6 @@ python3.12 frozen_lake.py
 |readme.md|童煜凱|楊紘鈞|
 =======
 |readme.md|童煜凱|楊紘鈞|
-|part1|童煜凱|
+|part1|-|
 |part2|童煜凱|
 |part3|楊紘鈞|
