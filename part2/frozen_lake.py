@@ -35,7 +35,7 @@ def run(episodes, is_training=True, render=False):
     # 如果不存檔，訓練完後測試時會生成一張新地圖，導致原本訓練好的 Agent 撞牆。
     if is_training:
         # 訓練時：生成一張 8x8 的隨機地圖 (p=0.8 代表 80% 是冰面，20% 是洞)
-        map_desc = generate_random_map(size=8, p=0.8)
+        map_desc = generate_random_map(size=8, p=0.9)
         # 將地圖存檔，供測試時使用
         with open(map_filename, 'wb') as f:
             pickle.dump(map_desc, f)
