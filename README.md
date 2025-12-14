@@ -29,7 +29,7 @@ python3.12 mountain_car.py --train --episodes 5000
 python3.12 mountain_car.py --render --episodes 10
 ```
 ### Part 2:
-#### 先確定目前位置在part2資料夾中
+#### 先cd到part2資料夾中
 ```bash
 python3.12 frozen_lake.py
 ```
