@@ -90,6 +90,7 @@ python main.py
 |Work|Name|Name|
 |---|---|---|
 |readme.md|童煜凱|楊紘鈞|
+|demo slides|童煜凱|楊紘鈞|
 |part1|-|-|
 |part2|童煜凱|-|
 |part3|楊紘鈞|-|
