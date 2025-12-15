@@ -12,9 +12,9 @@ def print_success_rate(rewards_per_episode):
     計算 Agent 的勝率。
     原理：將所有回的獎勵加總（成功為1，失敗為0），除以總回合數。
     """
-    total_episodes = len(rewards_per_episode)
-    success_count = np.sum(rewards_per_episode)
-    success_rate = (success_count / total_episodes) * 100
+    total_episodes = len(rewards_per_episode) # 總回合數
+    success_count = np.sum(rewards_per_episode) #計算成功了幾場（把陣列裡的 1 全部加起來）
+    success_rate = (success_count / total_episodes) * 100 # 計算成功率百分比
     print(f"✅ Success Rate: {success_rate:.2f}% ({int(success_count)} / {total_episodes} episodes)")
     return success_rate
 
@@ -35,7 +35,7 @@ def run(episodes, is_training=True, render=False):
     # 如果不存檔，訓練完後測試時會生成一張新地圖，導致原本訓練好的 Agent 撞牆。
     if is_training:
         # 訓練時：生成一張 8x8 的隨機地圖 (p=0.8 代表 80% 是冰面，20% 是洞)
-        map_desc = generate_random_map(size=8, p=0.8)
+        map_desc = generate_random_map(size=8, p=0.9)
         # 將地圖存檔，供測試時使用
         with open(map_filename, 'wb') as f:
             pickle.dump(map_desc, f)
@@ -53,7 +53,7 @@ def run(episodes, is_training=True, render=False):
 
     # --- 2. 建立環境 ---
     # is_slippery=True: 地板會滑。你選「向右」，實際上可能「向右、向上、或向下」。
-    # 這增加了環境的隨機性 (Stochastic)，需要更保守的學習率。
+    # 這增加了環境的隨機性，需要更保守的學習率。
     env = gym.make('FrozenLake-v1', desc=map_desc, is_slippery=True, render_mode='human' if render else None)
 
     # --- 3. 初始化 Q-table ---
@@ -108,7 +108,7 @@ def run(episodes, is_training=True, render=False):
                 
                 # 改良寫法 (Tie-breaking)：
                 max_q_value = np.max(q[state, :]) # 找出目前最大的 Q 值
-                actions_with_max_q = np.where(q[state, :] == max_q_value)[0] # 找出所有擁有最大值的動作索引
+                actions_with_max_q = np.where(q[state, :] == max_q_value)[0] # 找出所有擁有最大值的動作索引 
                 action = rng.choice(actions_with_max_q) # 從這些最好的動作中「隨機」選一個
 
             # 執行動作，觀察環境回饋
