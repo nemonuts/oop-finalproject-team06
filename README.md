@@ -46,6 +46,7 @@
 ##### 特色：啟發式搜尋，模擬人類判斷
 ##### 設立棋型評分表
 ##### 攻守權衡公式 Score = (MyScore) - (OpponentScore * 0.9) 同時考慮「自己得分」與「阻礙對手」
+![UML diagram](uml_diagram/uml.png)
 
 ## 2.Dependencies :
 #### 請先下載老師提供的Gymnasium v1.2.2跟以上zip file後照著以下步驟初始化： 
